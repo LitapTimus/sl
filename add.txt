@@ -27,7 +27,7 @@ from collections import Counter
 
 alphabet = string.ascii_letters
 
-plain = "Daivik is a god"
+plain = "Hello darkness"
 renc = "xesetiibs"
 
 def rail_fence_encrypt(text, key=2):
@@ -74,7 +74,7 @@ import string
 from collections import Counter
 
 alphabet = string.ascii_letters
-plain = "Daivik is a god"
+plain = "Hello darkness"
 
 def ceasar(plain):
     key = 3
@@ -135,3 +135,4 @@ def bfcaesar(cipher_text):
         
 
 bfcaesar(plain)
+
