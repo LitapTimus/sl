@@ -214,6 +214,8 @@ Change, dir = “/root/demoCA” to dir = “./demoCA”
 3. ls 
 4. openssl verify –CAfile 
 demoCA/cacert.pemdemoCA/newcerts/D2356899488954156892.pem
+If you’re inside the demoCA folder:
+openssl verify -CAfile cacert.pem newcerts/D2356899488954156892.pem
 
 
 
