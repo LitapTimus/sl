@@ -170,6 +170,54 @@ cd demoCA/newcerts
 ls
 openssl verify -CAfile ../cacert.pem certif.pem
 
+--------
+
+1. Openssl version 
+
+2. Nano /usr/lib/ssl/misc/CA.pl 
+Change, CATOP = “/root/demoCA” to CATOP = “./demoCA”
+
+3. Nano /usr/lib/ssl/openssl.cnf 
+Change, dir = “/root/demoCA” to dir = “./demoCA” 
+
+4. Creating CA 
+1. Open terminal and be in the home folder only 
+2. /usr/lib/ssl/misc/CA.pl –newca 
+3. Enter 
+4. Enter any password (remember throughout the practical) 
+5. Enter all the details (remember throughout the practical) 
+6. Enter 
+7. Enter 
+8. Enter the password 
+9. ls 
+10. cd demoCA 
+
+5. Validating User 
+1. Openssl req –new –keyout privateuser.pem –out requser.pem 
+2. Enter password 
+3. Enter all the details (remember throughout the practical) 
+4. Enter 
+5. Enter 
+6. Enter the password 
+7. ls 
+8. cd demoCA 
+
+6. CA Signing the user document 
+1. openssl ca –in requser.pem 
+2. enter password 
+3. yes 
+4. yes 
+
+7. CA verifying the certificate 
+1. cd /demoCA 
+2. cd newcerts 
+3. ls 
+4. openssl verify –CAfile 
+demoCA/cacert.pemdemoCA/newcerts/D2356899488954156892.pem
+
+
+
+
 
 
 
