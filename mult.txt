@@ -245,7 +245,22 @@ Shows packets like Client Hello, Server Hello, Certificate, Change Cipher Spec.
 After handshake, data appears as Encrypted Application Data.
 Communication is encrypted and secure.
 
+----
 
+HTTP Packet Analysis using Wireshark in Ubuntu
+
+Steps:
+Open Terminal → run sudo wireshark to start Wireshark.
+Select your network interface (e.g., eth0 or wlan0) and click Start.
+In the filter bar, type http and press Enter.
+Open Firefox and visit http://example.com.
+
+HTTPS Packet Analysis using Wireshark in Ubuntu
+
+Steps:
+Run sudo wireshark and start capture.
+Apply filter tls or ssl.
+Visit https://example.com in Firefox.
 
 
 
