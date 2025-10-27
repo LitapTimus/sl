@@ -115,24 +115,22 @@ c_decrypt(enc)
 ceasar brute firce decrypt
 
 import string
-from collections import Counter
 
 alphabet = string.ascii_letters
 plain = "ALH LV EHVW"
 
-    
 def bfcaesar(cipher_text):
     for key in range(1, 26):
         decrypted = []
         for c in cipher_text:
             if c in alphabet:
-                start = ord('A') if c.isupper() else ord('a')
-                decrypted.append(chr((ord(c) - start - key) % 26 + start))
+                idx = alphabet.index(c)
+                d_c = alphabet[(idx - key) % len(alphabet)]
+                decrypted.append(d_c)
             else:
                 decrypted.append(c)
         print(f"Key {key}: {''.join(decrypted)}")
 
-        
-
 bfcaesar(plain)
+
 
