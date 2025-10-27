@@ -218,6 +218,32 @@ If you’re inside the demoCA folder:
 openssl verify -CAfile cacert.pem newcerts/D2356899488954156892.pem
 
 
+------------------------------------------------------------------------------------------------------------------------
+
+
+HTTP Packet Analysis using Wireshark in Ubuntu
+
+Steps:
+Open Wireshark → start capture on active interface.
+Use filter: http.
+Visit an HTTP site (e.g., http://example.com).
+Observation:
+
+Packets show GET, POST, and 200 OK messages.
+Data (headers, URLs, content) is visible in plain text.
+No encryption — insecure communication.
+
+HTTPS Packet Analysis using Wireshark in Ubuntu
+
+Steps:
+Start Wireshark → capture on interface.
+Use filter: tls or ssl.
+Visit an HTTPS site (e.g., https://example.com).
+
+Observation:
+Shows packets like Client Hello, Server Hello, Certificate, Change Cipher Spec.
+After handshake, data appears as Encrypted Application Data.
+Communication is encrypted and secure.
 
 
 
