@@ -1,122 +1,178 @@
-1. Encryption and Email Security
+ceasar:
+To encrypt a message with a Caesar cipher, each letter in the message is changed 
+using a simple rule: shift by three. Each letter is replaced by the letter three letters ahead in 
+the alphabet. A becomes D, B becomes E, and so on. For the last letters, we can think of 
+alphabet as a circle and "wrap around". W becomes Z, X becomes A, Y becomes B, and Z 
+becomes C. To change a message back, each letter is replaced by the one three before it.
 
-Caesar Cipher is a substitution cipher that shifts each letter by a fixed number of positions in the alphabet.
-It is one of the simplest and earliest encryption methods used in classical cryptography.
-In Kleopatra, encryption ensures message confidentiality using public/private key pairs.
-Decryption in Kleopatra uses the recipient’s private key to recover the original message.
-Email encryption ensures secure communication and prevents unauthorized access to message content.
+brute force:
+We can hack the Caesar cipher by using a cryptanalytic technique called brute-force. 
+A brute-force attack tries every possible decryption key for a cipher. Decrypting the 
+ciphertext with that key, looking at the output, and then moving on to the next key if they 
+didn’t find the secret message. Because the brute-force technique is so effective against the 
+Caesar cipher
 
-2. Decryption and Keylogger Attack
+---------------------------------------------------------------------------------------------------------
+railfence:
+In the rail fence cipher, the plain text is written downwards and diagonally on successive 
+"rails" of an imaginary fence, then moving up when we reach the bottom rail. When we 
+reach the top rail, the message is written downwards again until the whole plaintext is 
+written out. The message is then read off in rows.
 
-Caesar Cipher decryption shifts characters in the opposite direction of encryption.
-It restores the original plaintext from the encrypted text using the same key value.
-A keylogger records keystrokes typed on a keyboard, often used for monitoring or stealing information.
-Keylogger attacks can capture passwords, credit card details, or confidential messages.
-Protection involves using antivirus software and avoiding untrusted downloads.
+product:
+In cryptography, a product cipher combines two or more transformations in a manner 
+intending that the resulting cipher is more secure than the individual components to make it 
+resistant to cryptanalysis. The product cipher combines a sequence of simple 
+transformations such
+---------------------------------------------------------------------------------------------------------
+AES:
+AES is an iterative rather than Feistel cipher. It is based on ‘substitution–permutation 
+network’. It comprises of a series of linked operations, some of which involve replacing 
+inputs by specific outputs (substitutions) and others involve shuffling bits around 
+(permutations). 
+Interestingly, AES performs all its computations on bytes rather than bits. Hence, AES treats 
+the 128 bits of a plaintext block as 16 bytes. These 16 bytes are arranged in four columns 
+and four rows for processing as a matrix.
 
-3. Rail Fence and Product Cipher
+1. Electronic Code Block Mode 
+2. Cipher Block Chain Mode 
+3. Output feedback block Mode 
+4. Cipher feedback block mode 
+5. Counter Mode 
 
-Rail Fence Cipher is a transposition cipher that writes text in zigzag form and reads it row-wise.
-It rearranges letters without changing them, improving secrecy through pattern change.
-A Product Cipher combines two or more ciphers (like substitution and transposition).
-Using Rail Fence as part of a product cipher increases encryption complexity.
-Such combined methods form the basis for modern cryptographic algorithms.
+Electronic Code Block Mode: 
+Electronic code book is the easiest block cipher mode of functioning. It is easier because 
+of direct encryption of each block of input plaintext and output is in form of blocks of 
+encrypted cipher text. Generally, if a message is larger than b bits in size, it can be broken 
+down into a bunch of blocks and the procedure is repeated. 
 
-4. Caesar Decryption, SHA-512 & AES-CBC-128
+Cipher Block Chain Mode: 
+Cipher block chaining or CBC is an advancement made on ECB since ECB compromises 
+some security requirements. In CBC, the previous cipher block is given as input to the next 
+encryption algorithm after XOR with the original plaintext block. In a nutshell here, a 
+cipher block is produced by encrypting an XOR output of the previous cipher block and 
+present plaintext block.
 
-Caesar Cipher decryption reverses the shift applied during encryption.
-SHA-512 is a cryptographic hash function that produces a 512-bit (64-byte) output.
-Hashing ensures data integrity by detecting any modification in the input.
-AES (Advanced Encryption Standard) is a symmetric encryption algorithm widely used for data security.
-AES-CBC-128 mode uses a 128-bit key and an initialization vector (IV) to provide strong confidentiality.
+Perform AES in OFB, CFB and Counter Modes
+Open SSL is an all-around cryptography library that offers an open-source 
+application of the TLS protocol. First released in 1998, it is available for Linux, Windows, 
+macOS, and BSD systems. OpenSSL allows users to perform various SSL-related tasks, 
+including CSR (Certificate Signing Request) and private keys generation, and SSL 
+certificate installation, encryption and decryption in different modes and algorithms. 
+---------------------------------------------------------------------------------------------------------
+Digital Signature 
+A digital signature is an electronic, encrypted, stamp of authentication on digital 
+information such as email messages, macros, or electronic documents. A signature 
+confirms that the information originated from the signer and has not been altered.
+---------------------------------------------------------------------------------------------------------
+RSA 
+Asymmetric encryption involves a mechanism called Public Key and Private 
+Key. Everyone in the network can access the public key but the private key is anonymous. 
+The user generates a private key using a function. 
+• To encrypt a message, one can use the public key. 
+• Send the message over a channel. The private key is generated on the receiver side. 
+• The private key is used to decrypt the encrypted message. 
+The Rivest-Shamir-Adleman(RSA) Algorithm is a public-key crypto algorithm. It is based 
+on the principle that prime factorization of a large composite number is tough. Only the 
+private key of the receiver can decrypt the cipher message. RSA is a key pair generator.
+---------------------------------------------------------------------------------------------------------
+Hashing Techniques SHA -256 and SHA 512 
+Hashing is the process of translating a given key into a code. A hash function is used 
+to substitute the information with a newly generated hash code. More specifically, 
+hashing is the practice of taking a string or input key, a variable created for storing 
+narrative data, and representing it with a hash value, which is typically determined by 
+an algorithm and constitutes a much shorter string than the original. 
+---------------------------------------------------------------------------------------------------------
+Implementation of Digital Certificates 
+A digital certificate is a file or electronic password that proves the authenticity of a 
+device, server, or user through the use of cryptography and the public key 
+infrastructure (PKI). 
+Digital certificate authentication helps organizations ensure that only trusted devices 
+and users can connect to their networks. Another common use of digital certificates is 
+to confirm the authenticity of a website to a web browser, which is also known as a 
+secure sockets layer or SSL certificate. 
+A digital certificate contains identifiable information, such as a user’s name, company, 
+or department and a device’s Internet Protocol (IP) address or serial number. Digital 
+certificates contain a copy of a public key from the certificate holder, which needs to 
+be matched to a corresponding private key to verify it is real. A public key certificate 
+is issued by certificate authorities (CAs), which sign certificates to verify the identity 
+of the requesting device or user.
+---------------------------------------------------------------------------------------------------------
+wireshark
+Wireshark, a network analysis tool formerly known as Ethereal, captures 
+packets in real time and display them in human-readable format. Wireshark 
+includes filters, color-coding and other features that let you dig deep into 
+network traffic and inspect individual packets. 
+Applications: 
+• Network administrators use it to troubleshoot network problems 
+• Network security engineers use it to examine security problems 
+• Developers use it to debug protocol implementations 
+• People use it to learn network protocol internals beside these examples 
+can be helpful in many other situations too. 
+Features: 
+The following are some of the many features wireshark provides: 
+• Available for UNIX and Windows. 
+• Capture live packet data from a network interface. 
+• Open files containing packet data captured with tcpdump/WinDump, 
+Wireshark, 
+• and a number of other packet capture programs. 
+• Import packets from text files containing hex dumps of packet data. 
+• Display packets with very detailed protocol information. 
+• Export some or all packets in a number of capture file formats. 
+• Filter packets on many criteria. 
+• Search for packets on many criteria. 
+• Colorize packet display based on filters. 
+• Create various statistics. 
+---------------------------------------------------------------------------------------------------------
+keylogger
+The term ‘keylogger’ itself is neutral, and the word describes the program’s 
+function. Most sources define a keylogger as a software program designed to 
+secretly monitor and log all keystrokes. This definition is not altogether correct, 
+since a keylogger doesn’t have to be software – it can also be a device. 
+Keylogging devices are much rarer than keylogging software, but it is important 
+to keep their existence in mind when thinking about information security. 
+Legitimate programs may have a keylogging function which can be used to call 
+certain program functions using “hotkeys,” or to toggle between keyboard layouts 
+(e.g. Keyboard Ninja). There is a lot of legitimate software which is designed to 
+allow administrators to track what employees do throughout the day, or to allow 
+users to track the activity of third parties on their computers. However, the ethical 
+boundary between justified monitoring and espionage is a fine line. Legitimate 
+software is often used deliberately to steal confidential user information such as 
+passwords. 
+---------------------------------------------------------------------------------------------------------
+email
+PGP stands for Pretty Good Privacy (PGP) which is invented by Phil 
+Zimmermann. 
+• PGP was designed to provide all four aspects of security, i.e., privacy, 
+integrity, authentication, and non-repudiation in the sending of email. 
+• PGP uses a digital signature (a combination of hashing and public key 
+encryption) to provide integrity, authentication, and non-repudiation. PGP 
+uses a combination of secret key encryption and public key encryption to 
+provide privacy. Therefore, we can say that the digital signature uses one 
+hash function, one secret key, and two private-public key pairs. 
+• PGP is an open source and freely available software package for email 
+security. 
+• PGP provides authentication through the use of Digital Signature. 
+• It provides confidentiality through the use of symmetric block encryption. 
 
-5. Brute Force, SHA-256 & AES-CBC-256
+Analyze the Phishing Attack 
+Theory:  
+An email phishing attack is a form of cybercrime where attackers send 
+fraudulent emails that appear to be from legitimate sources, such as banks, 
+companies, or trusted individuals, to deceive recipients into disclosing sensitive 
+information or performing actions that compromise their security. These emails 
+are designed to look convincing and often contain urgent or enticing messages, 
+fake links, or malicious attachments intended to trick recipients into clicking on 
+links, downloading files, or providing personal information like passwords, 
+credit card numbers, or social security numbers. The goal of an email phishing 
+attack is to exploit the victim's trust to gain unauthorized access to sensitive 
+data or systems.
+---------------------------------------------------------------------------------------------------------
 
-A brute force attack tries all possible keys to decrypt encrypted text until it finds the correct one.
-It is time-consuming but guarantees finding the correct key eventually.
-SHA-256 hashing produces a 256-bit output and is used to ensure message integrity.
-AES-CBC-256 uses a 256-bit key for stronger encryption security.
-CBC mode adds randomness through the IV, preventing pattern-based attacks.
+---------------------------------------------------------------------------------------------------------
 
-6. Product Cipher & AES-ECB-256
+---------------------------------------------------------------------------------------------------------
 
-A product cipher combines multiple encryption techniques to increase strength.
-Applying Rail Fence on Caesar Cipher output mixes substitution and transposition for higher complexity.
-AES-ECB mode encrypts each block independently, which can reveal patterns in data.
-AES-ECB-256 uses a 256-bit key, offering strong but less secure pattern protection compared to CBC.
-ECB mode is usually avoided for large or patterned data due to its predictability.
+---------------------------------------------------------------------------------------------------------
 
-7. Product Cipher (Caesar) & Network Analysis
-
-Applying Caesar Cipher on encrypted text adds an additional encryption layer.
-Finding an IP address (like google.com) helps identify the server location.
-Traceroute determines the number of hops (routers) between source and destination.
-Port scanning reveals which communication ports are open on a server.
-Tools like ping, traceroute, and nmap are used for network and port analysis.
-
-8. Digital Signature
-
-A digital signature ensures authenticity, integrity, and non-repudiation of a message.
-It uses the sender’s private key for signing and the public key for verification.
-Any modification in data after signing invalidates the signature.
-Digital signatures are commonly used in secure email and document authentication.
-They rely on public key infrastructure (PKI) for trust and validation.
-
-9. RSA Encryption and Decryption
-
-RSA is an asymmetric encryption algorithm using two keys — public and private.
-The public key encrypts data, and the private key decrypts it.
-It is based on the mathematical difficulty of factoring large prime numbers.
-RSA ensures confidentiality and authentication in communication.
-It is widely used in SSL/TLS, digital signatures, and secure key exchange.
-
-10. Password Attack & File Integrity
-
-A password attack attempts to crack or guess user passwords through various methods.
-Network commands can help identify suspicious IPs or unauthorized access attempts.
-File integrity checking ensures files have not been altered or corrupted.
-Tools like diff, md5sum, or sha help verify file integrity.
-Maintaining logs helps trace the attacker and identify compromised systems.
-
-11. HTTP & HTTPS Analysis
-
-Wireshark is a network protocol analyzer used to inspect data packets in real time.
-HTTP transmits data in plaintext, making it less secure.
-Http Uses port 80
-https Uses port 443
-HTTPS encrypts data using SSL/TLS, ensuring secure communication.
-HTTPS handshake involves certificate exchange and key negotiation.
-HTTPS protects against eavesdropping and man-in-the-middle attacks.
-
-12. Network Analysis Using PuTTY
-
-PuTTY is a terminal emulator used to connect to remote machines via SSH or Telnet.
-Open ports indicate active network services available for communication.
-Port scanning identifies which services are running on a system.
-Common ports include 80 (HTTP), 22 (SSH), and 443 (HTTPS).
-Network analysis helps assess security posture and detect vulnerabilities.
-
-13. Keylogger, AES-CBC-256 & Rail Fence Decryption
-
-A keylogger records user keystrokes to capture sensitive data.
-AES-CBC-256 provides strong encryption using a 256-bit key and an IV for randomness.
-Decryption restores original data using the same key and IV.
-Rail Fence decryption reconstructs the original message from its zigzag pattern.
-Layered encryption and decryption help protect data from unauthorized access.
-
-14. Digital Certificate
-
-A digital certificate authenticates the identity of a user or organization.
-It is issued by a Certificate Authority (CA) to establish trust.
-It contains the public key, organization details, and validity period.
-Digital certificates are used in SSL/TLS for secure web communication.
-They ensure that data is exchanged only with verified and trusted entities.
-
-15. Phishing Link Analysis
-
-A phishing link is designed to trick users into revealing personal or financial information.
-Such links often mimic legitimate websites to appear trustworthy.
-Analyzing the URL, domain, and SSL certificate helps detect phishing attempts.
-Phishing attacks compromise user credentials and financial data.
-
-Always verify URLs and avoid clicking unknown or suspicious links.
+--------------------------------------------------------------------------------------------------------

@@ -262,5 +262,29 @@ Run sudo wireshark and start capture.
 Apply filter tls or ssl.
 Visit https://example.com in Firefox.
 
+------------------------------------------------------------------------------------------------------------------------
+kleopatra
+Click Kleopatra Software 
+Click on File ------ > New Key Pair 
+Select Create a OpenPGP Key Pair 
+Click Next and give User name “your name” 
+Mail as “yourname@gamail.com” 
+Click on Protect the generated key with a passphrase 
+Select Create
+Give the password 
+Key pair will be created Successfully. 
+Click Finish 
+Step 3: 
+Go to the Kleopatra and right click the name field and click export and save it 
+as public key 
+Go to the Kleopatra and right click the EMAIL field and click back up secret 
+key and save as a private key 
+Step 4: 
+Go to Notepad and Type Any message you want to Send 
+Step 5: 
+Copy the message you have written in the notepad and Go to the kleopatra 
+and Select clipboard and Encrypt 
+Step 6: Do the Same procedure for the Decryption
+------------------------------------------------------------------------------------------------------------------------
 
 
