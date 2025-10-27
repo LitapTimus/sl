@@ -59,6 +59,44 @@ manual_cipher = "xesetiibs"
 decrypted_manual = railfence_decrypt(manual_cipher)
 print("Manual decryption:", decrypted_manual)
 
+-------
+
+import string
+import math
+
+plain = "hello darkness"
+
+def enc(plain, rail):
+    if rail != 2:
+        return "Rail not supported"
+    else:
+        plain = plain.replace(" ", "")
+        enr = plain[::2] + plain[1::2]
+        print(f"Encrypted = {''.join(enr)}")
+        return enr
+
+def dec(enr, rail):
+    if rail != 2:
+        return "Rail not supported"
+    else:
+        enr = enr.replace(" ", "")
+        length = len(enr) 
+        split = (length + 1) // 2
+        
+        block1 = enr[:split]
+        block2 = enr[split:]
+        dec =''
+        for i in range(len(block2)):
+            dec = dec + block1[i] + block2[i]
+            
+        if len(block1) > len(block2):
+            dec = dec + block1[-1]
+            
+        print(f"Encrypted = {''.join(dec)}")    
+        return dec
+
+enr = enc(plain, 2)
+dec(enr, 2)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -126,6 +164,7 @@ def bfcaesar(cipher_text):
         print(f"Key {key}: {''.join(decrypted)}")
 
 bfcaesar(plain)
+
 
 
 
