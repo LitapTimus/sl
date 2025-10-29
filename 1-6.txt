@@ -1,0 +1,858 @@
+1.Install and spin up a Kubernetes Cluster on cloud platforms. do this on aws
+🪜 Step-by-Step Setup
+🩵 Step 1: Open AWS Management Console
+
+Go to: https://console.aws.amazon.com/
+
+Sign in with your AWS credentials.
+
+In the search bar, type EC2 → Click EC2.
+
+⚙️ Step 2: Launch an EC2 Instance
+
+Click Launch Instance.
+
+Name your instance → e.g., minikube-cluster.
+
+Choose Amazon Machine Image (AMI):
+
+Select Ubuntu Server 22.04 LTS (Free Tier Eligible).
+
+Choose Instance Type:
+
+Pick t2.medium (2 vCPUs, 4 GB RAM).
+
+Minikube often needs more memory than t2.micro.
+
+Key pair (login):
+
+Choose Create new key pair if you don’t have one.
+
+Type: RSA
+
+Download the .pem file and keep it safe.
+
+Network settings:
+
+Allow SSH (port 22) from My IP.
+
+(Optional) Allow HTTP (port 80) if you plan to host apps later.
+
+Leave Storage as default (8–10 GB is fine).
+
+Click Launch Instance.
+
+🌐 Step 3: Connect to the Instance
+
+After launch → go to Instances → Your instance → Connect.
+
+Copy the Public IPv4 address.
+
+From your terminal (on your local machine):
+
+chmod 400 your-key.pem
+ssh -i "your-key.pem" ubuntu@<EC2-PUBLIC-IP>
+
+
+Replace <EC2-PUBLIC-IP> with your instance IP.
+
+You’re now inside the EC2 terminal as the ubuntu user.
+
+🐳 Step 4: Install Docker
+
+Inside the EC2 terminal, run:
+
+sudo apt update -y
+sudo apt install -y docker.io
+sudo systemctl enable docker
+sudo systemctl start docker
+sudo usermod -aG docker $USER
+newgrp docker
+docker --version
+
+🧩 Step 5: Install kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+kubectl version --client
+
+🚀 Step 6: Install Minikube
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+minikube version
+
+⚡ Step 7: Start the Kubernetes Cluster
+minikube start --driver=docker
+
+
+This may take a few minutes.
+It downloads:
+
+Kubernetes binaries
+
+Docker images
+
+Configures a single-node cluster
+
+✅ Step 8: Verify Installation
+
+Check the cluster status:
+
+minikube status
+
+
+List the Kubernetes node:
+
+kubectl get nodes
+
+
+Expected output:
+
+NAME       STATUS   ROLES           AGE   VERSION
+minikube   Ready    control-plane   3m    v1.30.x
+
+
+List system pods (optional):
+
+kubectl get pods -A
+
+💤 Step 9: Stop or Delete the Cluster
+
+When you’re done:
+
+minikube stop
+
+
+To remove everything:
+
+minikube delete
+
+
+To stop the EC2 instance from AWS Console:
+
+Go back to EC2 → Instances
+
+Select your instance → Click Instance state → Stop
+(or Terminate if you want to delete it completely)
+-----------------------------------------------------------------------------------------------------------------------------------------------
+2.Demonstrate your application to deploy on S3 / SEBS using AWS CodePipeline
+Aim
+To demonstrate continuous integration and deployment (CI/CD) of an application using AWS CodePipeline, and deploy it automatically to an S3 bucket or Elastic Beanstalk Service (SEBS).
+
+Step 1: Create S3 Bucket
+Go to AWS Console → S3 → Create Bucket
+Name: my-website-bucket
+Uncheck Block all public access
+Upload your website files (index.html, etc.)
+Go to Properties → Static website hosting → Enable
+Index document: index.html
+Note down the endpoint URL.
+Step 2: Create Source Repository
+Option A: Use AWS CodeCommit
+# On local machine
+git init
+git add .
+git commit -m "Initial commit"
+git remote add origin <CodeCommit_Repo_URL>
+git push origin main
+Option B: Use GitHub repository
+Step 3: Create AWS CodeBuild Project
+Go to AWS CodeBuild → Create Project
+Connect Source: GitHub or CodeCommit
+Build environment: Ubuntu / Standard
+Runtime: Node.js or any runtime (optional)
+Buildspec file (optional for static site)
+Step 4: Create CodePipeline
+Go to AWS CodePipeline → Create Pipeline
+Give name: MyStaticWebPipeline
+Choose Service Role (or let AWS create one)
+Add Source Stage: GitHub or CodeCommit
+Add Build Stage: Select CodeBuild project
+Add Deploy Stage: Select “Amazon S3” as deploy provider
+Bucket name: my-website-bucket
+Step 5: Run Pipeline
+Click Release change to start pipeline.
+CodePipeline will:
+Fetch latest code
+Build (if required)
+Deploy to S3 automatically
+Step 6: Test Deployment
+Open the S3 static website URL.
+You’ll see your application hosted live.
+Output
+✅ CodePipeline created successfully
+✅ Source → Build → Deploy stages automated
+✅ Website automatically deployed to S3
+-----------------------------------------------------------------------------------------------------------------------------------------------
+3 and 4
+Experiment 3: Deploy Sample Application on EC2 Instance using AWS CodeDeploy
+Aim
+
+To deploy a sample web application on an AWS EC2 instance using AWS CodeDeploy as part of a CI/CD workflow.
+
+Requirements
+
+AWS Account
+
+Services Used:
+
+EC2 Instance (Amazon Linux 2 / Ubuntu)
+
+S3 Bucket (to store application bundle)
+
+AWS CodeDeploy
+
+IAM Roles for:
+
+EC2 instance (CodeDeploy agent permissions)
+
+CodeDeploy service role
+
+Application bundle (HTML or Node.js app)
+
+appspec.yml configuration file
+
+Procedure
+Step 1: Create an EC2 Instance
+
+Go to AWS Management Console → EC2 → Launch Instance
+
+Choose:
+
+Name: CodeDeploy-Instance
+
+AMI: Amazon Linux 2
+
+Instance Type: t2.micro
+
+Key Pair: Select existing or create new
+
+Under Advanced Details → IAM Role, attach a role with the AmazonEC2RoleforAWSCodeDeploy policy.
+(Create this role in IAM if not available.)
+
+Allow HTTP (port 80) and SSH (port 22) in the security group.
+
+Click Launch Instance
+
+Step 2: Install CodeDeploy Agent on EC2
+
+Connect to your EC2 instance via SSH and run:
+
+sudo yum update -y
+sudo yum install ruby -y
+sudo yum install wget -y
+cd /home/ec2-user
+wget https://aws-codedeploy-us-east-1.s3.us-east-1.amazonaws.com/latest/install
+chmod +x ./install
+sudo ./install auto
+sudo service codedeploy-agent start
+sudo service codedeploy-agent status
+
+Step 3: Create a CodeDeploy Application
+
+Go to AWS Console → CodeDeploy → Applications → Create application
+
+Enter:
+
+Application name: MySampleApp
+
+Compute platform: EC2/On-premises
+
+Click Create application
+
+Step 4: Create a Deployment Group
+
+In the same application, click Create deployment group
+
+Enter:
+
+Name: MyDeploymentGroup
+
+Service role: Select IAM role with AWSCodeDeployRole policy
+
+Environment configuration: Choose Amazon EC2 Instances
+
+Tag key: Use the tag you assigned to the instance (e.g., Name = CodeDeploy-Instance)
+
+Deployment type: In-place
+
+Click Create deployment group
+
+Step 5: Prepare Your Application Revision
+
+Create a folder locally named MyApp with:
+
+MyApp/
+ ├── index.html
+ └── appspec.yml
+
+
+index.html
+
+<h1>Deployed via AWS CodeDeploy</h1>
+
+
+appspec.yml
+
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /var/www/html
+
+
+Zip the folder:
+
+zip -r MyApp.zip MyApp/
+
+
+Upload MyApp.zip to an S3 bucket.
+
+Step 6: Create a Deployment
+
+Go to CodeDeploy → Applications → MySampleApp → Deployments → Create deployment
+
+Select:
+
+Deployment group: MyDeploymentGroup
+
+Revision type: MyApp.zip from S3
+
+Click Create deployment
+
+Step 7: Verify Deployment
+
+Wait until deployment status shows Succeeded.
+
+In your browser, open:
+
+http://<EC2-Public-IP>/
+
+
+You should see:
+
+Deployed via AWS CodeDeploy
+
+Output
+
+✅ Application deployed automatically to EC2 instance
+✅ CodeDeploy Agent executed successfully
+✅ Web app accessible via EC2 Public IP
+
+Conclusion
+
+A sample application was successfully deployed on an EC2 instance using AWS CodeDeploy, demonstrating automated deployment capability in the AWS DevOps pipeline.
+-----------------------------------------------------------------------------------------------------------------------------------------------
+🧪 Experiment 4: Install Terraform on Windows Machine and Build, Apply, and Destroy AWS EC2 Instance
+Aim
+
+To install Terraform on a Windows system and use it to create, manage, and destroy AWS EC2 infrastructure using Infrastructure as Code (IaC) principles.
+
+Requirements
+
+Windows 10/11 system
+
+AWS Account
+
+AWS Access Key & Secret Key
+
+Terraform (latest version)
+
+VS Code or Command Prompt / PowerShell
+
+Theory
+
+Terraform by HashiCorp is an Infrastructure as Code (IaC) tool that lets you define cloud infrastructure using declarative configuration files (.tf files).
+Basic workflow:
+
+Write → Define resources (EC2, S3, etc.)
+
+Init → Initialize provider plugins
+
+Plan → Preview changes
+
+Apply → Create resources
+
+Destroy → Remove all resources
+
+Steps to Install Terraform on Windows and Build, Apply, and Destroy an AWS EC2 Instance using Terraform (via AWS website)
+
+1) Check that no instance is running on EC2
+
+Go to the AWS Management Console → EC2 → Instances
+
+Ensure there are no running EC2 instances before you start the experiment.
+
+2) Create an IAM User with Programmatic Access and Administrator Permissions
+
+Go to AWS Console → IAM → Users → Create User
+
+Enter User name → e.g., terraform-user
+
+Under Access type, select Programmatic access
+
+Click Next → Attach policies directly → Select AdministratorAccess
+
+Complete creation by clicking Create user
+
+3) Create Access Key and Secret Key
+
+Go to IAM → Users → terraform-user → Security credentials tab
+
+Click Create access key
+
+Choose Command Line Interface (CLI) option
+
+Copy and save the Access key ID and Secret access key
+(You will use these to connect Terraform with AWS.)
+
+4) Install Terraform on Windows
+
+Go to Terraform Downloads Page
+
+Download the Windows (AMD64) ZIP file.
+
+Extract the ZIP file (you’ll get terraform.exe)
+
+Copy terraform.exe into:
+
+C:\Program Files\Terraform\
+
+
+Add this path to System Environment Variables:
+
+Search Edit System Environment Variables
+
+Click Environment Variables → Path → Edit → New
+
+Add:
+
+C:\Program Files\Terraform\
+
+
+Open Command Prompt and check installation:
+
+terraform -version
+
+5) Configure AWS CLI with Access Keys
+
+Download and install AWS CLI from: https://aws.amazon.com/cli/
+
+Open Command Prompt and run:
+
+aws configure
+
+
+Enter:
+
+AWS Access Key ID: (from step 3)
+
+AWS Secret Access Key: (from step 3)
+
+Default region name: us-east-1
+
+Default output format: json
+
+6) Write a Terraform Program
+
+Create a folder C:\terraform-aws-demo\ and a file named main.tf.
+
+main.tf
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_instance" "my_ec2" {
+  ami           = "ami-0c55b159cbfafe1f0"   # Amazon Linux 2 AMI
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = "Terraform-EC2"
+  }
+}
+
+7) Initialize Terraform
+
+Open Command Prompt inside the folder where main.tf is saved:
+
+cd C:\terraform-aws-demo
+terraform init
+
+
+This command downloads the AWS provider plugin and prepares Terraform for use.
+
+8) Run Terraform Plan
+terraform plan
+
+
+This shows the actions Terraform will take — in this case, creating one EC2 instance.
+
+9) Check Instances on AWS Console
+
+Before applying, go to:
+AWS Console → EC2 → Instances
+and verify no instance is currently running.
+
+10) Apply the Terraform Configuration
+terraform apply
+
+
+Type yes when prompted.
+Terraform will now create the EC2 instance on AWS.
+
+11) Verify EC2 Instance Creation
+
+Go to AWS Console → EC2 → Instances
+✅ You will see an instance named Terraform-EC2 running.
+
+12) Destroy the Instance
+
+When you are done, run:
+
+terraform destroy
+
+
+Type yes when prompted.
+Terraform will delete the EC2 instance automatically.
+
+✅ Final Verification
+
+Go back to AWS Console → EC2 → Instances
+
+Ensure the instance is terminated or removed.
+
+
+Type yes to confirm.
+✅ Terraform removes all resources created in the configuration.
+
+Output
+
+✅ Terraform installed successfully
+✅ EC2 instance created, verified, and destroyed via Terraform commands
+✅ Demonstrated Infrastructure as Code automation
+-----------------------------------------------------------------------------------------------------------------------------------------------
+🧪 Experiment 5: Test Java Code using SonarQube
+Aim
+
+To perform static code analysis and measure code quality of a Java project using SonarQube.
+
+Requirements
+
+Software Required:
+
+Java JDK 11 or higher
+
+Apache Maven or Gradle
+
+SonarQube Server (latest version)
+
+SonarScanner (for analysis)
+
+Procedure
+Part 1: Install and Run the SonarQube Server
+1) Download SonarQube
+
+Go to the official website: https://www.sonarsource.com/products/sonarqube/downloads/
+
+Download the Community Edition ZIP file.
+
+2) Create Folder and Extract
+
+Create a new folder on your C: drive named SONARQUBE.
+
+Extract the contents of the ZIP file into:
+
+C:\SONARQUBE
+
+
+After extraction, your folder structure should look like:
+
+C:\SONARQUBE\sonarqube-10.1.0.73491
+
+3) Run the Server
+
+Navigate to the Windows-specific bin directory:
+
+C:\SONARQUBE\sonarqube-10.1.0.73491\bin\windows-x86-64
+
+
+Double-click StartSonar.bat.
+
+Wait until you see the message:
+
+SonarQube is operational
+
+
+Keep this command prompt window open (do not close it).
+
+4) Access SonarQube Dashboard
+
+Open a browser and go to:
+👉 http://localhost:9000
+
+Default login credentials:
+
+Username: admin
+Password: admin
+
+
+Change the password when prompted — for example:
+
+New password: admin123
+
+Part 2: Set Up the SonarScanner
+1) Download SonarScanner
+
+From the SonarQube dashboard or directly from the official site, download SonarScanner for Windows.
+
+2) Create Folder and Extract
+
+Create a new folder on your C drive:
+
+C:\SONARSCANNER
+
+
+Extract the scanner ZIP file into this folder.
+
+Folder structure will be:
+
+C:\SONARSCANNER\sonar-scanner-5.0.1.3006-windows
+
+3) Add SonarScanner to Environment Path
+
+Copy this path:
+
+C:\SONARSCANNER\sonar-scanner-5.0.1.3006-windows\bin
+
+
+Search “Edit the system environment variables” in Windows.
+
+Go to:
+
+Environment Variables → System Variables → Path → Edit → New
+
+
+Paste the copied path, then click OK to save.
+
+Verify installation by opening Command Prompt and typing:
+
+sonar-scanner -v
+
+Part 3: Create a Project and Generate an Analysis Token
+1) Create a New Project
+
+On the SonarQube dashboard, click:
+
++ Create a project → Manually
+
+
+Enter:
+
+Project display name: e.g., my-python-app
+
+Project key: e.g., my-python-app
+
+Click Set Up.
+
+2) Generate an Analysis Token
+
+Choose Locally when prompted.
+
+Click Generate a token.
+
+Copy and save this token safely — you won’t be able to see it again.
+
+3) Get the Scanner Command
+
+Select your operating system as Windows.
+
+Copy the example SonarScanner command displayed on the screen — you’ll use it to run the analysis.
+
+Part 4: Prepare Your Code Project
+1) Create a Project Folder
+
+Create a folder on your local system:
+
+C:\my-python-project
+
+
+(or for Java: C:\my-java-project)
+
+2) Add Source Files
+
+Place your Python (.py) or Java (.java) source code files in this folder.
+
+Example for Python:
+
+C:\my-python-project\sample.py
+
+
+Example for Java:
+
+C:\my-java-project\src\Main.java
+
+Part 5: Run the Analysis
+1) Open Command Prompt in Project Folder
+
+Open your project folder in File Explorer.
+
+Type cmd in the address bar → press Enter to open a terminal in that path.
+
+2) Execute the Scanner Command
+
+Paste and modify the command you copied earlier.
+Example:
+
+sonar-scanner -D"sonar.projectKey=my-python-app" -D"sonar.sources=." -D"sonar.host.url=http://localhost:9000" -D"sonar.login=YOUR_GENERATED_TOKEN"
+
+
+Replace:
+
+my-python-app → your project key
+
+YOUR_GENERATED_TOKEN → your analysis token
+
+3) Wait for Completion
+
+The analysis will run and upload results to SonarQube.
+
+Wait until you see:
+
+EXECUTION SUCCESS
+
+Part 6: View the Analysis Report
+
+Open browser → http://localhost:9000
+
+Log in as admin / admin123
+
+Go to your project (e.g., my-python-app)
+
+View reports for:
+
+🐞 Bugs
+
+🔐 Vulnerabilities
+
+⚠️ Code Smells
+
+🧩 Complexity
+
+📊 Duplications and Coverage
+
+Output
+
+✅ Java code analyzed successfully
+✅ Issues and metrics displayed on SonarQube dashboard
+✅ Quality Gate shows pass/fail results
+
+Conclusion
+
+SonarQube successfully analyzed the Java project and reported code quality metrics.
+This demonstrates the use of static analysis tools for improving software maintainability and reliability.
+
+🧪 Experiment 6: Test Python Code using SonarQube
+Aim
+
+To perform static code quality analysis of a Python project using SonarQube and SonarScanner.
+
+Requirements
+
+Software Required:
+
+Python 3.x
+
+pip (Python package manager)
+
+SonarQube Server
+
+SonarScanner
+
+Optional: Virtual environment for Python
+
+
+Procedure
+Step 1: Install Python
+
+Check version:
+
+python --version
+
+
+If not installed:
+
+Download from https://www.python.org/downloads/
+
+Add to system PATH.
+
+Step 2: Run SonarQube Server
+
+If not already running:
+
+StartSonar.bat
+
+
+Then visit → http://localhost:9000
+
+Step 3: Prepare Python Project
+
+Example project structure:
+
+MyPythonApp/
+ ├── app.py
+ └── sonar-project.properties
+
+
+app.py
+
+def add(a, b):
+    return a + b
+
+def subtract(a, b):
+    return a - b
+
+if __name__ == "__main__":
+    print("Sum:", add(10, 5))
+    print("Difference:", subtract(10, 5))
+
+Step 4: Create sonar-project.properties
+sonar.projectKey=MyPythonApp
+sonar.projectName=My Python Application
+sonar.projectVersion=1.0
+sonar.sources=.
+sonar.language=py
+sonar.sourceEncoding=UTF-8
+sonar.host.url=http://localhost:9000
+sonar.login=admin
+sonar.password=your_password
+
+Step 5: Run SonarScanner
+
+Open terminal in your project folder:
+
+sonar-scanner
+
+
+This command scans the Python code and uploads analysis data to SonarQube.
+
+Step 6: View Analysis Results
+
+Go to http://localhost:9000
+
+Open MyPythonApp dashboard
+
+Explore:
+
+Code smells
+
+Maintainability issues
+
+Security vulnerabilities
+
+Output
+
+✅ Python code analyzed successfully
+✅ Code issues and metrics visualized on SonarQube Dashboard
+✅ Static analysis successfully detects syntax and logic warnings
+-----------------------------------------------------------------------------------------------------------------------------------------------
