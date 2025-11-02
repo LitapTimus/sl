@@ -1,694 +1,337 @@
-🧪 Experiment 7: Create “Hello World” Lambda Function using Node.js / Java / Python
-Aim
+7) RUN SELENIUM TESTS IN JENKINS USING MAVEN — from scratch
+WHAT YOU NEED (from scratch)
 
-To create and execute a simple AWS Lambda function that prints “Hello World” using Node.js, Java, or Python runtime.
+A Maven project in GitHub containing Selenium tests. I’ll give a minimal project structure you can create and push.
 
-Requirements
+Chrome + ChromeDriver on the machine where tests run (master or slave).
 
-AWS Account
+Jenkins job configured to run mvn test.
 
-AWS Management Console Access
+CREATE A MINIMAL MAVEN + SELENIUM PROJECT (run locally then push to GitHub or create on EC2)
 
-AWS Lambda service
+On your local machine or master EC2:
 
-(Optional) AWS CLI configured with credentials
-
-Internet access
-
-Theory
-
-AWS Lambda is a serverless compute service where you can run code without managing servers.
-You upload your function code, and AWS automatically:
-
-Allocates resources
-
-Executes code in response to events
-
-Scales automatically
-
-Charges only for execution time
-
-A Lambda function consists of:
-
-Handler function (entry point)
-
-Runtime environment (Python, Node.js, Java, etc.)
-
-IAM role (defines permissions)
-
-Event trigger (e.g., API Gateway, S3, DynamoDB, CloudWatch)
-
-Procedure
-Step 1: Open AWS Lambda Console
-
-Go to AWS Console → Lambda → Create function
-
-Step 2: Choose “Author from scratch”
-
-Function name: HelloWorldFunction
-
-Runtime: Choose Python 3.9
-
-Role: “Create a new role with basic Lambda permissions”
-
-Step 3: Write Code
-Option A: Python
-def lambda_handler(event, context):
-    return "Hello World from Python Lambda!"
+# Create project
+mvn archetype:generate -DgroupId=com.selenium.demo -DartifactId=selenium-demo \
+  -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
+cd selenium-demo
 
 
-Step 4: Deploy and Test
+Edit pom.xml — add Selenium and Surefire plugin inside <dependencies> and <build>:
 
-Click Deploy
+Insert this into <dependencies>:
 
-Choose Test → Configure test event
+<dependency>
+  <groupId>org.seleniumhq.selenium</groupId>
+  <artifactId>selenium-java</artifactId>
+  <version>4.10.0</version>
+</dependency>
+<dependency>
+  <groupId>junit</groupId>
+  <artifactId>junit</artifactId>
+  <version>4.13.2</version>
+  <scope>test</scope>
+</dependency>
 
-Name: TestEvent
 
-Keep default JSON input
+Insert this into <build> to enable test reports:
 
-Click Test
+<plugins>
+  <plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <version>3.0.0-M7</version>
+  </plugin>
+</plugins>
 
-Step 5: View Output
 
-You’ll see in console:
+Create a test file src/test/java/com/selenium/demo/GoogleTest.java:
 
-"Hello World from <language> Lambda!"
+package com.selenium.demo;
 
-Output
+import org.junit.*;
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
 
-✅ Lambda function executed successfully
-✅ “Hello World” printed in the execution result
+public class GoogleTest {
+    private WebDriver driver;
 
-Conclusion
-
-A simple AWS Lambda function was successfully created and tested using Node.js / Java / Python, demonstrating serverless function execution.
-
-🧪 Experiment 8: Create AWS Lambda Function to Log “An Object Has Been Added” When an Object Is Added to S3 Bucket
-Aim
-
-To create a Lambda function that triggers automatically when a new object is uploaded to an S3 bucket and logs a message “An object has been added.”
-
-Requirements
-
-AWS Account
-
-AWS Lambda
-
-Amazon S3 Bucket
-
-IAM role with S3 and CloudWatch permissions
-
-Theory
-
-AWS Lambda + S3 Event Trigger:
-When an object is added to an S3 bucket, S3 generates an event notification.
-This event triggers a Lambda function configured with that bucket.
-The function can:
-
-Log details to CloudWatch
-
-Process uploaded files
-
-Trigger workflows or pipelines
-
-Procedure
-Step 1: Create an S3 Bucket
-
-Go to S3 → Create bucket
-
-Name: lambda-trigger-bucket
-
-Enable “Block public access” (default)
-
-Click Create bucket
-
-Step 2: Create Lambda Function
-
-Go to Lambda → Create function
-
-Name: S3ObjectAddedLogger
-
-Runtime: Python 3.x (or Node.js)
-
-Role: “Create new role with basic Lambda permissions”
-
-Step 3: Add Lambda Code
-Python Code
-import json
-
-def lambda_handler(event, context):
-    print("An object has been added to S3!")
-    print("Event details:", json.dumps(event))
-    return {
-        'statusCode': 200,
-        'body': json.dumps('Logged S3 object addition!')
+    @Before
+    public void setUp() {
+        System.setProperty("webdriver.chrome.driver", "/usr/bin/chromedriver");
+        // run headless if no display: use ChromeOptions in real tests
+        driver = new ChromeDriver();
     }
 
+    @Test
+    public void openGoogle() {
+        driver.get("https://www.google.com");
+        Assert.assertTrue(driver.getTitle().contains("Google"));
+    }
 
-Step 4: Configure S3 Trigger
+    @After
+    public void tearDown() {
+        if (driver != null) driver.quit();
+    }
+}
 
-In Lambda, go to Configuration → Triggers → Add trigger
 
-Choose S3
+Commit & push to GitHub:
+
+git init
+git add .
+git commit -m "Add selenium demo"
+git branch -M main
+git remote add origin <GITHUB_REPO>
+git push -u origin main
 
-Bucket: lambda-trigger-bucket
+INSTALL CHROME & CHROMEDRIVER (run on node where tests will run — master or slave — I recommend slave)
+# Install Chrome (on Ubuntu)
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo apt install -y ./google-chrome-stable_current_amd64.deb || sudo apt -f install -y
 
-Event type: “All object create events”
+# find Chrome major version
+google-chrome --version
+CHROME_MAJOR=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f1)
 
-Save the trigger
+# Install matching chromedriver using chromedriver.storage
+# For simplicity, fetch latest stable chromedriver:
+CHROME_DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+wget https://chromedriver.storage.googleapis.com/${CHROME_DRIVER_VERSION}/chromedriver_linux64.zip
+unzip chromedriver_linux64.zip
+sudo mv chromedriver /usr/bin/chromedriver
+sudo chmod +x /usr/bin/chromedriver
 
-Step 5: Test by Uploading a File
+# Optionally verify
+/usr/bin/chromedriver --version
 
-Go to S3 → your bucket → Upload → Add a small file (e.g., test.txt)
 
-Upload the file
+If running on headless server without GUI either:
 
-Step 6: Check Logs
+Use Chrome headless mode (modify tests to set ChromeOptions with --headless=new and --no-sandbox), or
 
-Go to CloudWatch → Logs → Log groups → /aws/lambda/S3ObjectAddedLogger
+Install Xvfb and run display for tests:
 
-Open latest log stream → You’ll see:
+sudo apt install -y xvfb
+xvfb-run -s "-screen 0 1920x1080x24" mvn test
 
-An object has been added to S3!
-Event details: {...}
+CREATE JENKINS JOB (where: Jenkins UI)
 
-Output
+New Item → Freestyle (or Maven project) → Name: Selenium-Maven-Test.
 
-✅ Lambda function automatically triggered on S3 upload
-✅ Logs show “An object has been added” message
+Source Code Management → Git → <GITHUB_REPO>.
 
-Conclusion
+Build → If Freestyle: Add Build step Invoke top-level Maven targets → Goals: clean test.
 
-Lambda successfully integrated with S3 and executed automatically when an object was uploaded, confirming event-driven architecture in AWS.
+Post-build → Publish JUnit test result report → **/target/surefire-reports/*.xml
 
-🧪 Experiment 9: Create AWS Lambda Function to Log “I Got Output”
-Aim
+Save → Build Now → Console Output will show test run and BUILD SUCCESS.
 
-To create and test a simple AWS Lambda function that prints “I got output” on execution.
+Notes about headless mode: On servers, modify test code to use ChromeOptions:
 
-Requirements
+ChromeOptions options = new ChromeOptions();
+options.addArguments("--headless=new");
+options.addArguments("--no-sandbox");
+options.addArguments("--disable-dev-shm-usage");
+WebDriver driver = new ChromeDriver(options);
 
-AWS Account
+8) BUILD PIPELINE PROJECT IN JENKINS — from scratch
+WHAT YOU NEED
 
-AWS Lambda access
+GitHub repo with Jenkinsfile, or configure pipeline script in Jenkins UI.
 
-Basic IAM permissions
+Jenkins pipeline plugin installed (installed by default in many Jenkins installations).
 
-Theory
+SIMPLE PIPELINE Jenkinsfile (place in repo root): create locally and push to GitHub
+pipeline {
+  agent any
 
-This experiment verifies basic Lambda function creation and CloudWatch logging functionality.
-Lambda runs the code inside a managed runtime environment and prints output to CloudWatch.
+  tools {
+    maven 'Maven'   // configure a Maven installation in Jenkins Global Tool Configuration called 'Maven'
+    jdk 'JDK17'     // configure a JDK installation named 'JDK17' in Jenkins
+  }
 
-Procedure
-Step 1: Open Lambda Console
-
-Go to AWS Console → Lambda → Create function
-
-Step 2: Configure Function
-
-Name: LogOutputFunction
-
-Runtime: Python 3.x or Node.js 18.x
-
-Role: “Create a new role with basic Lambda permissions”
-
-Step 3: Add Code
-Python
-def lambda_handler(event, context):
-    print("I got output")
-    return "I got output"
-
-Node.js
-exports.handler = async (event) => {
-    console.log("I got output");
-    return "I got output";
-};
-
-Step 4: Deploy and Test
-
-Click Deploy
-
-Click Test → Configure Test Event → Save
-
-Click Test
-
-Step 5: View Results
-
-Console Output:
-"I got output"
-
-CloudWatch Logs show the same message.
-
-Output
-
-✅ Lambda executed successfully
-✅ Console and CloudWatch show “I got output”
-
-Conclusion
-
-A simple AWS Lambda function was created and verified, demonstrating Lambda’s ability to execute code and log outputs in a serverless environment.
-
------------------------------------------------------------------------------------------------------------------------------------------------
-xperiment: Create EC2 Instance and IAM Role/User with Specific Permissions (Using AWS Website Only)
-🎯 Aim
-
-To create an Ubuntu EC2 instance (Free Tier) using .ppk key pair, connect to it via the AWS Management Console (EC2 Instance Connect), display the present working directory, and create an IAM Role, User, and Group with specific permissions.
-
-⚙️ Part A: Create EC2 Instance
-
-Step 1: Open EC2 Dashboard
-
-Log in to your AWS Management Console → https://aws.amazon.com/console
-
-In the search bar, type EC2 and open the EC2 Dashboard.
-
-Click Instances → Launch Instances.
-
-Step 2: Configure Instance
-
-Name: UbuntuInstance
-
-Application and OS Image (AMI): Ubuntu Server 22.04 LTS (Free Tier eligible)
-
-Instance Type: t2.micro
-
-Key Pair (login):
-
-Click Create new key pair
-
-Key pair name: ubuntu-key
-
-Key pair type: RSA
-
-Private key file format: .ppk (for compatibility, though we won’t use PuTTY)
-
-Click Create key pair (it will download automatically).
-
-Network settings:
-
-Check ✅ Allow SSH traffic from Anywhere (0.0.0.0/0)
-
-Storage:
-
-Keep default (8 GB gp3).
-
-Click Launch Instance.
-
-Step 3: Verify Instance Creation
-
-Go to EC2 → Instances → Running Instances.
-
-Wait until Instance State = Running and Status Check = 2/2 checks passed.
-
-Copy the Public IPv4 address (used for connection).
-
-⚙️ Part B: Connect to EC2 Instance (No PuTTY Used)
-
-Step 1: Use EC2 Instance Connect
-
-In the EC2 Instances page, select your instance (UbuntuInstance).
-
-Click the Connect button at the top.
-
-Select the EC2 Instance Connect tab (default option).
-
-Click Connect again.
-
-✅ A browser-based terminal window opens — you are now connected to your Ubuntu EC2 instance directly on the AWS website.
-
-Step 2: Display Present Working Directory
-In the EC2 terminal window, type:
-
-pwd
-
-
-Output:
-
-/home/ubuntu
-
-
-✅ This confirms your connection to the EC2 instance.
-
-⚙️ Part C: Create IAM Role with Required Policies
-
-Step 1: Open IAM Dashboard
-
-In AWS Console search bar → type IAM → select IAM service.
-
-Step 2: Create a Role
-
-In the left sidebar, click Roles → Create role.
-
-Trusted entity type: AWS Service.
-
-Use case: select EC2 (we’ll attach this role to the instance).
-
-Click Next.
-
-Step 3: Attach Permission Policies
-In the search bar, add the following two policies:
-
-✅ AmazonS3FullAccess
-
-✅ AWSLambdaBasicExecutionRole
-Click Next.
-
-Step 4: Name and Create Role
-
-Role name: EC2-S3-Lambda-Role
-
-Review configuration → Click Create role.
-
-Step 5: Attach Role to the EC2 Instance
-
-Go to EC2 → Instances → select your running instance.
-
-Click Actions → Security → Modify IAM Role.
-
-Under IAM Role, select EC2-S3-Lambda-Role.
-
-Click Update IAM role.
-
-✅ The IAM Role with S3 and Lambda permissions is now attached to your EC2 instance.
-
-⚙️ Part D: Create IAM Group and User
-
-Step 1: Create Group
-
-In IAM dashboard → Click User groups → Create group.
-
-Enter Group name: adlGroup.
-
-(Optional) You can attach general policies if needed.
-
-Click Create group.
-
-Step 2: Create User
-
-Go to Users → Create user.
-
-User name: adlUser.
-
-Click Next.
-
-Under Set permissions, choose Add user to group.
-
-Select the group you just created → adlGroup.
-
-Click Next → Create user.
-
-✅ IAM user adlUser is now created and added to group adlGroup.
-----------------------------------------------------------------------------------------------------------------------------------------------
-🧪 Experiment 11 a: Create EC2 Instance and Switch to Superuser (No PuTTY)
-🎯 Aim:
-
-To create an Ubuntu EC2 instance on AWS (Free Tier), connect to it using EC2 Instance Connect, and switch to the superuser.
-
-⚙️ Steps
-
-Step 1: Login to AWS Console → Search EC2 → Open EC2 Dashboard.
-Step 2: Click Instances → Launch instances.
-
-Step 3: Configure details
-
-Name: UbuntuInstance1
-
-AMI (OS): Ubuntu Server 22.04 LTS (Free Tier eligible)
-
-Instance type: t2.micro
-
-Key pair (login):
-
-Create new key pair
-
-Key name: superuser-key
-
-Key type: RSA
-
-File format: .ppk (for PuTTY compatibility; not used here)
-
-Click Create key pair to download it
-
-Network settings: Allow SSH (Port 22)
-
-Storage: Default (8 GB gp3)
-
-Click Launch instance.
-
-Step 4: Verify Instance
-Go to EC2 → Instances and confirm:
-
-Instance state → Running
-
-Status check → 2/2 checks passed
-
-Step 5: Connect to Instance
-
-Select the instance → Click Connect → Choose EC2 Instance Connect → Click Connect
-✅ This opens a terminal in your browser connected to the instance.
-
-Step 6: Display Present Working Directory
-Run:
-
-pwd
-
-
-Output:
-
-/home/ubuntu
-
-
-Step 7: Switch to Superuser
-Run:
-
-sudo su
-
-
-Output:
-
-root@ip-xx-xx-xx-xx:/home/ubuntu#
-
-
-✅ You are now in superuser (root) mode.
-
-✅ Result:
-
-Successfully created an Ubuntu EC2 instance and connected using AWS EC2 Instance Connect, verified working directory, and switched to superuser using sudo su.
-
-🧪 Experiment 11 b: Create EC2 Instance and Install Docker (No PuTTY)
-🎯 Aim:
-
-To create an Ubuntu EC2 instance on AWS (Free Tier), connect using EC2 Instance Connect, install Docker, enable it, and check its status.
-
-⚙️ Steps
-
-Step 1: Login to AWS Console → Open EC2 Dashboard → Click Launch Instances.
-
-Step 2: Configure instance details
-
-Name: UbuntuDockerInstance
-
-AMI (OS): Ubuntu Server 22.04 LTS (Free Tier eligible)
-
-Instance type: t2.micro
-
-Key pair (login):
-
-Create new key pair
-
-Key name: docker-key
-
-Key type: RSA
-
-File format: .ppk
-
-Click Create key pair (download it)
-
-Network settings: Allow SSH (Port 22)
-
-Storage: Default (8 GB gp3)
-
-Click Launch instance.
-
-Step 3: Verify Instance
-Go to EC2 → Instances → Running Instances, confirm Running state.
-
-Step 4: Connect via EC2 Instance Connect
-
-Select your instance → Connect → EC2 Instance Connect → Connect
-✅ Terminal opens in browser.
-
-Step 5: Switch to Superuser
-Run:
-
-sudo su
-
-
-✅ You now have root privileges.
-
-Step 6: Update Package Repositories
-
-apt update -y
-
-
-Step 7: Install Docker
-
-apt install docker.io -y
-
-
-Step 8: Enable Docker Service (Auto Start at Boot)
-
-systemctl enable docker
-
-
-Step 9: Start Docker Service
-
-systemctl start docker
-
-
-Step 10: Check Docker Status
-
-systemctl status docker
-
-
-✅ Output should show “active (running)”.
-
-Press Q to exit status screen.
-
-✅ Result:
-
-Successfully created an Ubuntu EC2 instance using AWS website, connected via EC2 Instance Connect, installed Docker, enabled it at boot, and verified its active status.
-------------------------------------------------------------------------------------------------------------------------------------------------
-🧪 Experiment 12
-Aim:
-
-Create an empty S3 bucket in the N. Virginia region.
-
-Add and delete an object from the bucket.
-
-Delete the bucket.
-
-Create an EC2 instance with Ubuntu (Free Tier).
-
-Install Docker and check its version — all using the AWS Management Console (website) only.
-
-Part A – Amazon S3
-Step 1: Create an Empty Bucket
-
-Sign in to AWS Management Console.
-
-In the search bar, type S3 and open S3 Dashboard.
-
-Click Create bucket.
-
-Enter a unique bucket name, e.g., my-test-bucket-aws-lab12.
-
-Choose Region: US East (N. Virginia) – us-east-1.
-
-Keep all settings default (Block public access – ON).
-
-Click Create bucket.
-
-✅ Result: An empty bucket is successfully created in N. Virginia.
-
-Step 2: Add an Object in the Bucket
-
-Open the newly created bucket.
-
-Click Upload → Add files.
-
-Choose any small local file (e.g., test.txt).
-
-Click Upload.
-
-✅ Result: Object (test.txt) successfully uploaded to the bucket.
-
-Step 3: Delete the Object
-
-Select the uploaded object (test.txt).
-
-Click Delete.
-
-Confirm deletion by typing delete.
-
-✅ Result: Object deleted from the bucket.
-
-Step 4: Delete the Bucket
-
-Go back to S3 → Buckets list.
-
-Select your bucket.
-
-Click Delete.
-
-Type the bucket name to confirm deletion.
-
-✅ Result: Bucket successfully deleted.
-
-Part B – Amazon EC2
-Step 5: Launch an EC2 Instance
-
-In AWS Console, search for EC2 → Open EC2 Dashboard → Click Launch instances.
-
-Enter Name: UbuntuDockerInstance.
-
-Choose AMI (OS): Ubuntu Server 22.04 LTS (Free Tier eligible).
-
-Choose Instance type: t2.micro.
-
-Key pair (login):
-
-Click Create new key pair.
-
-Name: docker-key.
-
-Type: RSA, Format: .ppk.
-
-Click Create key pair to download it.
-
-Network settings: Allow SSH (Port 22).
-
-Storage: Default (8 GB gp3).
-
-Click Launch instance.
-
-✅ Result: EC2 instance created successfully.
-
-Step 6: Connect to the Instance
-
-Go to EC2 → Instances → Running Instances.
-
-Select your instance → Click Connect → EC2 Instance Connect → Connect.
-✅ A browser terminal opens connected to your instance.
-
-Step 7: Switch to Superuser
-sudo su
-
-
-✅ You now have root access.
-
-Step 8: Update Package Repositories
-apt update -y
-
-Step 9: Install Docker
-apt install docker.io -y
-
-Step 10: Check Docker Version
+  stages {
+    stage('Checkout') {
+      steps {
+        git url: '<GITHUB_REPO>', branch: 'main'
+      }
+    }
+    stage('Build') {
+      steps {
+        sh 'mvn -B clean package'
+      }
+    }
+    stage('Test') {
+      steps {
+        sh 'mvn test'
+      }
+    }
+    stage('Archive') {
+      steps {
+        archiveArtifacts artifacts: 'target/*.jar'
+      }
+    }
+  }
+
+  post {
+    success { echo 'Pipeline Success' }
+    failure { echo 'Pipeline Failed' }
+  }
+}
+
+
+Add Jenkinsfile to repo, commit & push.
+
+In Jenkins: New Item → Pipeline → choose “Pipeline script from SCM” → SCM: Git → repo URL → Branch: main → Script Path: Jenkinsfile.
+
+Save → Build Now → watch Stage View and Console Output.
+
+Where to run: create file locally or in repo; Jenkins executes pipeline on master or assigned agent.
+
+9) GIT OPERATIONS — from scratch (commands to run on your local machine or EC2)
+Initialize local repo, link remote, commit, push
+# create project folder
+mkdir git-playground
+cd git-playground
+
+# init
+git init
+echo "Hello world" > README.md
+git add README.md
+git commit -m "initial commit"
+
+# create remote repo on GitHub via web UI named git-playground
+# then add remote:
+git remote add origin https://github.com/<username>/git-playground.git
+
+# push to remote
+git branch -M main
+git push -u origin main
+
+Clone, branch, merge, pull, revert examples
+# clone
+git clone https://github.com/<username>/git-playground.git
+cd git-playground
+
+# create and switch to new branch
+git checkout -b feature1
+
+# modify and commit
+echo "feature work" >> feature.txt
+git add feature.txt
+git commit -m "add feature1"
+
+# push branch
+git push -u origin feature1
+
+# switch back to main and merge
+git checkout main
+git pull origin main
+git merge feature1
+
+# push merged changes
+git push origin main
+
+# revert a commit (example)
+git log --oneline         # find <commit-id>
+git revert <commit-id>    # creates a new commit that undoes the changes
+git push origin main
+
+Handling conflicts
+
+If git pull causes conflicts, open the file, fix conflicts, then:
+
+git add <file>
+git commit -m "resolve conflict"
+git push
+
+10) PULL UBUNTU IMAGE IN DOCKER AND EXECUTE BASH — from scratch (run on any machine with Docker)
+On EC2 or local (where Docker installed)
+# verify docker
 docker --version
 
+# pull ubuntu image
+docker pull ubuntu:22.04
 
-✅ Output Example:
+# list images
+docker images
 
-Docker version 24.0.7, build afdd53b
+# run container with interactive bash
+docker run -it --name ubuntu-test ubuntu:22.04 /bin/bash
 
-Step 11: Enable and Start Docker Service
-systemctl enable docker
-systemctl start docker
-systemctl status docker
+# inside container (now at root prompt)
+cat /etc/os-release
+ls -la
+
+# exit container
+exit
+
+# optional: start the container again
+docker start -ai ubuntu-test
+
+# remove container
+docker rm ubuntu-test
+
+# remove image
+docker rmi ubuntu:22.04
 
 
-✅ Output shows:
-active (running) → Docker service is up and running.
+Notes: Use sudo if docker requires it (e.g., sudo docker run ...) unless your user is in docker group.
+
+11) PULL FILES FROM GITHUB, MODIFY, PUSH — from scratch (run on local or EC2)
+# clone repo
+git clone https://github.com/<username>/<repo>.git
+cd <repo>
+
+# list files
+ls -la
+
+# create or modify file
+echo "Some change" >> CHANGELOG.md
+
+# stage & commit
+git add CHANGELOG.md
+git commit -m "Update changelog"
+
+# push to remote
+git push origin main
 
 
+If repository is private you will need credentials. Use one of:
+
+HTTPS with username/password (or personal access token as password for GitHub), or
+
+SSH: set up an SSH key on your local machine and add the public key to GitHub account → clone using git@github.com:username/repo.git.
+
+To create a personal access token (PAT) on GitHub: GitHub Web UI → Settings → Developer settings → Personal access tokens → Generate token with repo scope. Use it as password for HTTPS pushes.
+
+12) PULL DOCKER IMAGES, LIST, AND REMOVE IMAGE — from scratch (run on Docker host)
+# pull images
+docker pull ubuntu:22.04
+docker pull nginx:stable
+docker pull alpine:3.18
+
+# list images
+docker images
+# or
+docker image ls
+
+# run a container
+docker run -d --name mynginx nginx:stable
+
+# stop & remove container
+docker stop mynginx
+docker rm mynginx
+
+# remove image (must remove containers using it first)
+docker rmi alpine:3.18
+
+# remove all dangling images
+docker image prune -f
+
+# remove unused images (careful)
+docker image prune -a -f
+
+
+If docker rmi complains about dependent containers, run docker ps -a then remove containers first.

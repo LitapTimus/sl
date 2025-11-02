@@ -1,858 +1,340 @@
-1.Install and spin up a Kubernetes Cluster on cloud platforms. do this on aws
-🪜 Step-by-Step Setup
-🩵 Step 1: Open AWS Management Console
+1) Create AWS EC2 instance and connect with PuTTY
 
-Go to: https://console.aws.amazon.com/
+What you’ll use
 
-Sign in with your AWS credentials.
+AWS Console (browser) — to create instance and security group
 
-In the search bar, type EC2 → Click EC2.
+Windows machine with PuTTY and PuTTYgen — to connect
 
-⚙️ Step 2: Launch an EC2 Instance
+Steps (AWS Console)
 
-Click Launch Instance.
+Launch EC2 instance (master)
 
-Name your instance → e.g., minikube-cluster.
+EC2 → Launch Instance
 
-Choose Amazon Machine Image (AMI):
+Name: jenkins-master
 
-Select Ubuntu Server 22.04 LTS (Free Tier Eligible).
+AMI: Ubuntu Server 22.04 LTS
 
-Choose Instance Type:
+Instance type: t2.micro (free tier)
 
-Pick t2.medium (2 vCPUs, 4 GB RAM).
+Key pair: Create new key pair → name mykey → download mykey.pem
 
-Minikube often needs more memory than t2.micro.
+Network/Security group: Create/choose security group allowing:
 
-Key pair (login):
+SSH (TCP 22) — Source: your IP (best) or 0.0.0.0/0 (less secure)
 
-Choose Create new key pair if you don’t have one.
+HTTP (TCP 80) optional
 
-Type: RSA
+Jenkins will use 8080 — allow TCP 8080 from your IP
 
-Download the .pem file and keep it safe.
+Storage: default 8GB OK
 
-Network settings:
+Launch instance
 
-Allow SSH (port 22) from My IP.
+Note the Public IPv4 address of the instance (call it <MASTER_IP>).
 
-(Optional) Allow HTTP (port 80) if you plan to host apps later.
+Repeat to create a second EC2 instance (slave) named jenkins-slave with the same key pair (mykey.pem) and allow SSH (22). Note its IP <SLAVE_IP>.
 
-Leave Storage as default (8–10 GB is fine).
+Steps (Windows) — convert key for PuTTY
 
-Click Launch Instance.
+PuTTY requires .ppk.
 
-🌐 Step 3: Connect to the Instance
+Open PuTTYgen → Load → choose file type All Files → select mykey.pem.
 
-After launch → go to Instances → Your instance → Connect.
+Click Save private key → save as mykey.ppk. (You can optionally set a passphrase.)
 
-Copy the Public IPv4 address.
+Connect with PuTTY (Windows)
 
-From your terminal (on your local machine):
+Open PuTTY
 
-chmod 400 your-key.pem
-ssh -i "your-key.pem" ubuntu@<EC2-PUBLIC-IP>
+Host Name: ubuntu@<MASTER_IP> (Ubuntu default user is ubuntu)
 
+Port: 22
 
-Replace <EC2-PUBLIC-IP> with your instance IP.
+Connection → SSH → Auth → Private key file for authentication → browse mykey.ppk
 
-You’re now inside the EC2 terminal as the ubuntu user.
+Open → Accept host key
 
-🐳 Step 4: Install Docker
+On success you’ll see a shell prompt.
 
-Inside the EC2 terminal, run:
+Verification (EC2 shell):
 
-sudo apt update -y
+whoami
+# expected: ubuntu
+hostname
+
+2) Install Docker on the EC2 instance and show version
+
+Where to run: on the EC2 terminal (SSH into <MASTER_IP> via PuTTY or ssh -i mykey.pem ubuntu@<MASTER_IP> from Linux/PowerShell OpenSSH)
+
+Commands (run on EC2)
+# update
+sudo apt update
+sudo apt upgrade -y
+
+# install docker from Ubuntu repo (simple method)
 sudo apt install -y docker.io
-sudo systemctl enable docker
-sudo systemctl start docker
-sudo usermod -aG docker $USER
-newgrp docker
+
+# enable & start docker
+sudo systemctl enable --now docker
+
+# allow ubuntu user to run docker without sudo (optional, requires re-login)
+sudo usermod -aG docker ubuntu
+
+# show docker version
 docker --version
 
-🧩 Step 5: Install kubectl
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-chmod +x kubectl
-sudo mv kubectl /usr/local/bin/
-kubectl version --client
+# test docker run (will download and run hello-world)
+sudo docker run --rm hello-world
 
-🚀 Step 6: Install Minikube
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-sudo install minikube-linux-amd64 /usr/local/bin/minikube
-minikube version
 
-⚡ Step 7: Start the Kubernetes Cluster
-minikube start --driver=docker
+Expected:
 
+docker --version outputs Docker version ...
 
-This may take a few minutes.
-It downloads:
+hello-world prints messages that Docker ran a container successfully.
 
-Kubernetes binaries
+If you added ubuntu to docker group, either exit and re-login or run newgrp docker before using docker without sudo.
 
-Docker images
+3) Install Git on the EC2 instance and show version
 
-Configures a single-node cluster
+Where to run: EC2 terminal (same instance)
 
-✅ Step 8: Verify Installation
+Commands (run on EC2)
+sudo apt update
+sudo apt install -y git
 
-Check the cluster status:
+# check version
+git --version
 
-minikube status
+# (optional) set global config
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
 
 
-List the Kubernetes node:
+Expected: git version 2.xx.x
 
-kubectl get nodes
+4) Compile project in Jenkins using Maven
 
+Where to run: mixture of EC2 master terminal (to install Jenkins & Maven) and Jenkins Web UI (to configure/build job).
 
-Expected output:
+I’ll show how to install Jenkins on the master if you don’t already have it, install Java & Maven, then configure a Maven job.
 
-NAME       STATUS   ROLES           AGE   VERSION
-minikube   Ready    control-plane   3m    v1.30.x
+A — Install Java, Jenkins & Maven on master (run on EC2)
+# 1. Java (Jenkins requires Java)
+sudo apt update
+sudo apt install -y openjdk-17-jdk
 
+# verify java
+java -version
 
-List system pods (optional):
+# 2. Add Jenkins repo & install (recommended approach)
+curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee \
+  /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+  https://pkg.jenkins.io/debian-stable binary/ | sudo tee /etc/apt/sources.list.d/jenkins.list
+sudo apt update
+sudo apt install -y jenkins
 
-kubectl get pods -A
+# start and enable jenkins
+sudo systemctl enable --now jenkins
 
-💤 Step 9: Stop or Delete the Cluster
+# check status
+sudo systemctl status jenkins --no-pager
 
-When you’re done:
+# 3. Install Maven
+sudo apt install -y maven
+mvn -version
 
-minikube stop
 
+Jenkins by default listens on port 8080. Make sure security group allows port 8080 from your IP.
 
-To remove everything:
+B — Open Jenkins UI (your Windows browser)
 
-minikube delete
+URL: http://<MASTER_IP>:8080
 
+First time: Jenkins asks for initial admin password:
 
-To stop the EC2 instance from AWS Console:
+# on EC2 to show password
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 
-Go back to EC2 → Instances
 
-Select your instance → Click Instance state → Stop
-(or Terminate if you want to delete it completely)
------------------------------------------------------------------------------------------------------------------------------------------------
-2.Demonstrate your application to deploy on S3 / SEBS using AWS CodePipeline
-Aim
-To demonstrate continuous integration and deployment (CI/CD) of an application using AWS CodePipeline, and deploy it automatically to an S3 bucket or Elastic Beanstalk Service (SEBS).
+Paste it into the UI, install suggested plugins, create admin user.
 
-Step 1: Create S3 Bucket
-Go to AWS Console → S3 → Create Bucket
-Name: my-website-bucket
-Uncheck Block all public access
-Upload your website files (index.html, etc.)
-Go to Properties → Static website hosting → Enable
-Index document: index.html
-Note down the endpoint URL.
-Step 2: Create Source Repository
-Option A: Use AWS CodeCommit
-# On local machine
-git init
-git add .
-git commit -m "Initial commit"
-git remote add origin <CodeCommit_Repo_URL>
-git push origin main
-Option B: Use GitHub repository
-Step 3: Create AWS CodeBuild Project
-Go to AWS CodeBuild → Create Project
-Connect Source: GitHub or CodeCommit
-Build environment: Ubuntu / Standard
-Runtime: Node.js or any runtime (optional)
-Buildspec file (optional for static site)
-Step 4: Create CodePipeline
-Go to AWS CodePipeline → Create Pipeline
-Give name: MyStaticWebPipeline
-Choose Service Role (or let AWS create one)
-Add Source Stage: GitHub or CodeCommit
-Add Build Stage: Select CodeBuild project
-Add Deploy Stage: Select “Amazon S3” as deploy provider
-Bucket name: my-website-bucket
-Step 5: Run Pipeline
-Click Release change to start pipeline.
-CodePipeline will:
-Fetch latest code
-Build (if required)
-Deploy to S3 automatically
-Step 6: Test Deployment
-Open the S3 static website URL.
-You’ll see your application hosted live.
-Output
-✅ CodePipeline created successfully
-✅ Source → Build → Deploy stages automated
-✅ Website automatically deployed to S3
------------------------------------------------------------------------------------------------------------------------------------------------
-3 and 4
-Experiment 3: Deploy Sample Application on EC2 Instance using AWS CodeDeploy
-Aim
+C — Create Maven-based job in Jenkins (Jenkins UI)
 
-To deploy a sample web application on an AWS EC2 instance using AWS CodeDeploy as part of a CI/CD workflow.
+Dashboard → New Item → name Maven-Build → Freestyle project (or choose Maven project if plugin installed) → OK.
 
-Requirements
+Source Code Management → Git → Repository URL: <GIT_REPO_URL> (e.g., https://github.com/yourname/sample-maven-app.git)
 
-AWS Account
+If private, add credentials (username/password or SSH key).
 
-Services Used:
+Build:
 
-EC2 Instance (Amazon Linux 2 / Ubuntu)
+If Freestyle: Add build step → Invoke top-level Maven targets → Goals: clean install
 
-S3 Bucket (to store application bundle)
+If Maven project: specify Root POM (default pom.xml) and Goals clean install
 
-AWS CodeDeploy
+Save.
 
-IAM Roles for:
+Click Build Now (left panel).
 
-EC2 instance (CodeDeploy agent permissions)
+Click the build number → Console Output to view logs.
 
-CodeDeploy service role
+What Jenkins will run: mvn clean install on the Jenkins master. If dependencies build, you should see BUILD SUCCESS.
 
-Application bundle (HTML or Node.js app)
+Troubleshooting (if Maven not found):
 
-appspec.yml configuration file
+Ensure mvn -version on the machine Jenkins runs allows Jenkins to find Maven. You may need to set global tool configuration in Jenkins:
 
-Procedure
-Step 1: Create an EC2 Instance
+Manage Jenkins → Global Tool Configuration → Maven → Add Maven installation (name and install automatically or provide path /usr/share/maven).
 
-Go to AWS Management Console → EC2 → Launch Instance
+5) Create slave (agent) node in Jenkins
 
-Choose:
+Where to run: on EC2 master (Jenkins UI) to configure node; on EC2 slave terminal to set up SSH keys and agent user.
 
-Name: CodeDeploy-Instance
+I’ll use SSH launch method (Jenkins connects to slave via SSH and runs agent).
 
-AMI: Amazon Linux 2
+A — Prepare the slave EC2 instance (jenkins-slave)
 
-Instance Type: t2.micro
+SSH to <SLAVE_IP> with the same key mykey.pem:
 
-Key Pair: Select existing or create new
+ssh -i mykey.pem ubuntu@<SLAVE_IP>
 
-Under Advanced Details → IAM Role, attach a role with the AmazonEC2RoleforAWSCodeDeploy policy.
-(Create this role in IAM if not available.)
 
-Allow HTTP (port 80) and SSH (port 22) in the security group.
+Create a directory for Jenkins agent and (optionally) create a dedicated jenkins user:
 
-Click Launch Instance
+# Option 1: use ubuntu user (quick)
+# ensure ssh server is installed and running
+sudo apt update
+sudo apt install -y openssh-server git
+sudo systemctl enable --now ssh
 
-Step 2: Install CodeDeploy Agent on EC2
+# Option 2: create dedicated user
+sudo useradd -m -s /bin/bash jenkins
+# allow passwordless sudo for jenkins (optional)
+sudo usermod -aG sudo jenkins
 
-Connect to your EC2 instance via SSH and run:
+# Create remote root dir Jenkins will use:
+sudo mkdir -p /home/jenkins/agent
+sudo chown -R jenkins:jenkins /home/jenkins/agent
 
-sudo yum update -y
-sudo yum install ruby -y
-sudo yum install wget -y
-cd /home/ec2-user
-wget https://aws-codedeploy-us-east-1.s3.us-east-1.amazonaws.com/latest/install
-chmod +x ./install
-sudo ./install auto
-sudo service codedeploy-agent start
-sudo service codedeploy-agent status
 
-Step 3: Create a CodeDeploy Application
+If you created jenkins user, add your public key to its authorized_keys:
 
-Go to AWS Console → CodeDeploy → Applications → Create application
+On your local Windows, you have mykey.pem. Convert to public key or extract public key on master and add. Easiest: copy contents of ~/.ssh/authorized_keys from ubuntu or add via:
 
-Enter:
+# on slave as jenkins (run as ubuntu then switch)
+sudo -u jenkins mkdir -p /home/jenkins/.ssh
+sudo -u jenkins bash -c 'echo "<PASTE_YOUR_PUBLIC_KEY>" >> /home/jenkins/.ssh/authorized_keys'
+sudo chmod 700 /home/jenkins/.ssh
+sudo chmod 600 /home/jenkins/.ssh/authorized_keys
 
-Application name: MySampleApp
 
-Compute platform: EC2/On-premises
+To get public key from your .pem:
 
-Click Create application
+On Windows using OpenSSH tool (PowerShell):
 
-Step 4: Create a Deployment Group
+ssh-keygen -y -f mykey.pem > mykey.pub
+# open mykey.pub, copy its contents
 
-In the same application, click Create deployment group
 
-Enter:
+Ensure SSH is running and reachable:
 
-Name: MyDeploymentGroup
+sudo systemctl status ssh
+# from your local machine, test:
+ssh -i mykey.pem jenkins@<SLAVE_IP>
 
-Service role: Select IAM role with AWSCodeDeployRole policy
+B — Configure node in Jenkins UI (master)
 
-Environment configuration: Choose Amazon EC2 Instances
+Jenkins → Manage Jenkins → Manage Nodes and Clouds → New Node
 
-Tag key: Use the tag you assigned to the instance (e.g., Name = CodeDeploy-Instance)
+Node name: slave1
 
-Deployment type: In-place
+Type: Permanent Agent
 
-Click Create deployment group
+of Executors: 1
 
-Step 5: Prepare Your Application Revision
+Remote root directory: /home/jenkins/agent (or /home/ubuntu if using ubuntu user)
 
-Create a folder locally named MyApp with:
+Labels: slave1 (or <SLAVE_LABEL>)
 
-MyApp/
- ├── index.html
- └── appspec.yml
+Launch method: Launch agents via SSH
 
+Host: <SLAVE_IP>
 
-index.html
+Credentials: Click Add → SSH Username with private key
 
-<h1>Deployed via AWS CodeDeploy</h1>
+Username: jenkins (or ubuntu)
 
+Private Key: choose Enter directly and paste the contents of mykey.pem (the PEM private key). Jenkins can use the PEM to SSH.
 
-appspec.yml
+Host Key Verification Strategy: Default or Non verifying for lab (not recommended in prod).
 
-version: 0.0
-os: linux
-files:
-  - source: /
-    destination: /var/www/html
+Click Save. Jenkins will try to connect and start the agent.
 
+Verification:
 
-Zip the folder:
+Node shows Connected and Idle.
 
-zip -r MyApp.zip MyApp/
+Console log for node shows Agent connected.
 
+Alternative: If SSH launch fails, you can use the agent.jar method:
 
-Upload MyApp.zip to an S3 bucket.
+In Jenkins node config, set Launch method to Launch agent via Java Web Start or Launch agent by connecting it to the controller:
 
-Step 6: Create a Deployment
+On slave run:
 
-Go to CodeDeploy → Applications → MySampleApp → Deployments → Create deployment
+# download agent.jar on slave
+mkdir -p /home/jenkins/agent
+cd /home/jenkins/agent
+wget http://<MASTER_IP>:8080/jnlpJars/agent.jar
+# run agent (example)
+java -jar agent.jar -jnlpUrl http://<MASTER_IP>:8080/computer/slave1/slave-agent.jnlp -secret <secret-from-jenkins>
 
-Select:
 
-Deployment group: MyDeploymentGroup
+But SSH launcher is simpler.
 
-Revision type: MyApp.zip from S3
+6) Assign project to slave node and build project
 
-Click Create deployment
+Where to run: Jenkins Web UI (master). Jenkins will execute build commands on the slave.
 
-Step 7: Verify Deployment
+Steps (Jenkins UI)
 
-Wait until deployment status shows Succeeded.
+Open the job you previously created (e.g., Maven-Build) → Configure.
 
-In your browser, open:
+Under General → check Restrict where this project can be run.
 
-http://<EC2-Public-IP>/
+In Label Expression put the node label you assigned (e.g., slave1).
 
+Save.
 
-You should see:
+Run build
 
-Deployed via AWS CodeDeploy
+Click Build Now.
 
-Output
+Open the build → Console Output.
 
-✅ Application deployed automatically to EC2 instance
-✅ CodeDeploy Agent executed successfully
-✅ Web app accessible via EC2 Public IP
+What to look for in Console Output
 
-Conclusion
+At top you should see:
 
-A sample application was successfully deployed on an EC2 instance using AWS CodeDeploy, demonstrating automated deployment capability in the AWS DevOps pipeline.
------------------------------------------------------------------------------------------------------------------------------------------------
-🧪 Experiment 4: Install Terraform on Windows Machine and Build, Apply, and Destroy AWS EC2 Instance
-Aim
+Running on slave1 in /home/jenkins/agent/workspace/Maven-Build
 
-To install Terraform on a Windows system and use it to create, manage, and destroy AWS EC2 infrastructure using Infrastructure as Code (IaC) principles.
 
-Requirements
+Then standard Maven output, ending with:
 
-Windows 10/11 system
+[INFO] BUILD SUCCESS
 
-AWS Account
+If you need to execute arbitrary shell commands on the slave (for debugging)
 
-AWS Access Key & Secret Key
+In the Jenkins job, add a Build step → Execute shell and add commands such as:
 
-Terraform (latest version)
+whoami
+pwd
+ls -la
+mvn -version
 
-VS Code or Command Prompt / PowerShell
 
-Theory
-
-Terraform by HashiCorp is an Infrastructure as Code (IaC) tool that lets you define cloud infrastructure using declarative configuration files (.tf files).
-Basic workflow:
-
-Write → Define resources (EC2, S3, etc.)
-
-Init → Initialize provider plugins
-
-Plan → Preview changes
-
-Apply → Create resources
-
-Destroy → Remove all resources
-
-Steps to Install Terraform on Windows and Build, Apply, and Destroy an AWS EC2 Instance using Terraform (via AWS website)
-
-1) Check that no instance is running on EC2
-
-Go to the AWS Management Console → EC2 → Instances
-
-Ensure there are no running EC2 instances before you start the experiment.
-
-2) Create an IAM User with Programmatic Access and Administrator Permissions
-
-Go to AWS Console → IAM → Users → Create User
-
-Enter User name → e.g., terraform-user
-
-Under Access type, select Programmatic access
-
-Click Next → Attach policies directly → Select AdministratorAccess
-
-Complete creation by clicking Create user
-
-3) Create Access Key and Secret Key
-
-Go to IAM → Users → terraform-user → Security credentials tab
-
-Click Create access key
-
-Choose Command Line Interface (CLI) option
-
-Copy and save the Access key ID and Secret access key
-(You will use these to connect Terraform with AWS.)
-
-4) Install Terraform on Windows
-
-Go to Terraform Downloads Page
-
-Download the Windows (AMD64) ZIP file.
-
-Extract the ZIP file (you’ll get terraform.exe)
-
-Copy terraform.exe into:
-
-C:\Program Files\Terraform\
-
-
-Add this path to System Environment Variables:
-
-Search Edit System Environment Variables
-
-Click Environment Variables → Path → Edit → New
-
-Add:
-
-C:\Program Files\Terraform\
-
-
-Open Command Prompt and check installation:
-
-terraform -version
-
-5) Configure AWS CLI with Access Keys
-
-Download and install AWS CLI from: https://aws.amazon.com/cli/
-
-Open Command Prompt and run:
-
-aws configure
-
-
-Enter:
-
-AWS Access Key ID: (from step 3)
-
-AWS Secret Access Key: (from step 3)
-
-Default region name: us-east-1
-
-Default output format: json
-
-6) Write a Terraform Program
-
-Create a folder C:\terraform-aws-demo\ and a file named main.tf.
-
-main.tf
-
-provider "aws" {
-  region = "us-east-1"
-}
-
-resource "aws_instance" "my_ec2" {
-  ami           = "ami-0c55b159cbfafe1f0"   # Amazon Linux 2 AMI
-  instance_type = "t2.micro"
-
-  tags = {
-    Name = "Terraform-EC2"
-  }
-}
-
-7) Initialize Terraform
-
-Open Command Prompt inside the folder where main.tf is saved:
-
-cd C:\terraform-aws-demo
-terraform init
-
-
-This command downloads the AWS provider plugin and prepares Terraform for use.
-
-8) Run Terraform Plan
-terraform plan
-
-
-This shows the actions Terraform will take — in this case, creating one EC2 instance.
-
-9) Check Instances on AWS Console
-
-Before applying, go to:
-AWS Console → EC2 → Instances
-and verify no instance is currently running.
-
-10) Apply the Terraform Configuration
-terraform apply
-
-
-Type yes when prompted.
-Terraform will now create the EC2 instance on AWS.
-
-11) Verify EC2 Instance Creation
-
-Go to AWS Console → EC2 → Instances
-✅ You will see an instance named Terraform-EC2 running.
-
-12) Destroy the Instance
-
-When you are done, run:
-
-terraform destroy
-
-
-Type yes when prompted.
-Terraform will delete the EC2 instance automatically.
-
-✅ Final Verification
-
-Go back to AWS Console → EC2 → Instances
-
-Ensure the instance is terminated or removed.
-
-
-Type yes to confirm.
-✅ Terraform removes all resources created in the configuration.
-
-Output
-
-✅ Terraform installed successfully
-✅ EC2 instance created, verified, and destroyed via Terraform commands
-✅ Demonstrated Infrastructure as Code automation
------------------------------------------------------------------------------------------------------------------------------------------------
-🧪 Experiment 5: Test Java Code using SonarQube
-Aim
-
-To perform static code analysis and measure code quality of a Java project using SonarQube.
-
-Requirements
-
-Software Required:
-
-Java JDK 11 or higher
-
-Apache Maven or Gradle
-
-SonarQube Server (latest version)
-
-SonarScanner (for analysis)
-
-Procedure
-Part 1: Install and Run the SonarQube Server
-1) Download SonarQube
-
-Go to the official website: https://www.sonarsource.com/products/sonarqube/downloads/
-
-Download the Community Edition ZIP file.
-
-2) Create Folder and Extract
-
-Create a new folder on your C: drive named SONARQUBE.
-
-Extract the contents of the ZIP file into:
-
-C:\SONARQUBE
-
-
-After extraction, your folder structure should look like:
-
-C:\SONARQUBE\sonarqube-10.1.0.73491
-
-3) Run the Server
-
-Navigate to the Windows-specific bin directory:
-
-C:\SONARQUBE\sonarqube-10.1.0.73491\bin\windows-x86-64
-
-
-Double-click StartSonar.bat.
-
-Wait until you see the message:
-
-SonarQube is operational
-
-
-Keep this command prompt window open (do not close it).
-
-4) Access SonarQube Dashboard
-
-Open a browser and go to:
-👉 http://localhost:9000
-
-Default login credentials:
-
-Username: admin
-Password: admin
-
-
-Change the password when prompted — for example:
-
-New password: admin123
-
-Part 2: Set Up the SonarScanner
-1) Download SonarScanner
-
-From the SonarQube dashboard or directly from the official site, download SonarScanner for Windows.
-
-2) Create Folder and Extract
-
-Create a new folder on your C drive:
-
-C:\SONARSCANNER
-
-
-Extract the scanner ZIP file into this folder.
-
-Folder structure will be:
-
-C:\SONARSCANNER\sonar-scanner-5.0.1.3006-windows
-
-3) Add SonarScanner to Environment Path
-
-Copy this path:
-
-C:\SONARSCANNER\sonar-scanner-5.0.1.3006-windows\bin
-
-
-Search “Edit the system environment variables” in Windows.
-
-Go to:
-
-Environment Variables → System Variables → Path → Edit → New
-
-
-Paste the copied path, then click OK to save.
-
-Verify installation by opening Command Prompt and typing:
-
-sonar-scanner -v
-
-Part 3: Create a Project and Generate an Analysis Token
-1) Create a New Project
-
-On the SonarQube dashboard, click:
-
-+ Create a project → Manually
-
-
-Enter:
-
-Project display name: e.g., my-python-app
-
-Project key: e.g., my-python-app
-
-Click Set Up.
-
-2) Generate an Analysis Token
-
-Choose Locally when prompted.
-
-Click Generate a token.
-
-Copy and save this token safely — you won’t be able to see it again.
-
-3) Get the Scanner Command
-
-Select your operating system as Windows.
-
-Copy the example SonarScanner command displayed on the screen — you’ll use it to run the analysis.
-
-Part 4: Prepare Your Code Project
-1) Create a Project Folder
-
-Create a folder on your local system:
-
-C:\my-python-project
-
-
-(or for Java: C:\my-java-project)
-
-2) Add Source Files
-
-Place your Python (.py) or Java (.java) source code files in this folder.
-
-Example for Python:
-
-C:\my-python-project\sample.py
-
-
-Example for Java:
-
-C:\my-java-project\src\Main.java
-
-Part 5: Run the Analysis
-1) Open Command Prompt in Project Folder
-
-Open your project folder in File Explorer.
-
-Type cmd in the address bar → press Enter to open a terminal in that path.
-
-2) Execute the Scanner Command
-
-Paste and modify the command you copied earlier.
-Example:
-
-sonar-scanner -D"sonar.projectKey=my-python-app" -D"sonar.sources=." -D"sonar.host.url=http://localhost:9000" -D"sonar.login=YOUR_GENERATED_TOKEN"
-
-
-Replace:
-
-my-python-app → your project key
-
-YOUR_GENERATED_TOKEN → your analysis token
-
-3) Wait for Completion
-
-The analysis will run and upload results to SonarQube.
-
-Wait until you see:
-
-EXECUTION SUCCESS
-
-Part 6: View the Analysis Report
-
-Open browser → http://localhost:9000
-
-Log in as admin / admin123
-
-Go to your project (e.g., my-python-app)
-
-View reports for:
-
-🐞 Bugs
-
-🔐 Vulnerabilities
-
-⚠️ Code Smells
-
-🧩 Complexity
-
-📊 Duplications and Coverage
-
-Output
-
-✅ Java code analyzed successfully
-✅ Issues and metrics displayed on SonarQube dashboard
-✅ Quality Gate shows pass/fail results
-
-Conclusion
-
-SonarQube successfully analyzed the Java project and reported code quality metrics.
-This demonstrates the use of static analysis tools for improving software maintainability and reliability.
-
-🧪 Experiment 6: Test Python Code using SonarQube
-Aim
-
-To perform static code quality analysis of a Python project using SonarQube and SonarScanner.
-
-Requirements
-
-Software Required:
-
-Python 3.x
-
-pip (Python package manager)
-
-SonarQube Server
-
-SonarScanner
-
-Optional: Virtual environment for Python
-
-
-Procedure
-Step 1: Install Python
-
-Check version:
-
-python --version
-
-
-If not installed:
-
-Download from https://www.python.org/downloads/
-
-Add to system PATH.
-
-Step 2: Run SonarQube Server
-
-If not already running:
-
-StartSonar.bat
-
-
-Then visit → http://localhost:9000
-
-Step 3: Prepare Python Project
-
-Example project structure:
-
-MyPythonApp/
- ├── app.py
- └── sonar-project.properties
-
-
-app.py
-
-def add(a, b):
-    return a + b
-
-def subtract(a, b):
-    return a - b
-
-if __name__ == "__main__":
-    print("Sum:", add(10, 5))
-    print("Difference:", subtract(10, 5))
-
-Step 4: Create sonar-project.properties
-sonar.projectKey=MyPythonApp
-sonar.projectName=My Python Application
-sonar.projectVersion=1.0
-sonar.sources=.
-sonar.language=py
-sonar.sourceEncoding=UTF-8
-sonar.host.url=http://localhost:9000
-sonar.login=admin
-sonar.password=your_password
-
-Step 5: Run SonarScanner
-
-Open terminal in your project folder:
-
-sonar-scanner
-
-
-This command scans the Python code and uploads analysis data to SonarQube.
-
-Step 6: View Analysis Results
-
-Go to http://localhost:9000
-
-Open MyPythonApp dashboard
-
-Explore:
-
-Code smells
-
-Maintainability issues
-
-Security vulnerabilities
-
-Output
-
-✅ Python code analyzed successfully
-✅ Code issues and metrics visualized on SonarQube Dashboard
-✅ Static analysis successfully detects syntax and logic warnings
------------------------------------------------------------------------------------------------------------------------------------------------
+These run on the slave workspace.
